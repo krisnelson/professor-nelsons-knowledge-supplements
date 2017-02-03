@@ -7,6 +7,12 @@ You need API keys/tokens for both.
 
 Results are currently throttled and cached. (Details of that will be changeable later.)
 
+## Why the name?
+Well, I teach university students about
+the history of science, so there's that. Second, it's a 
+(minimally) amusing reference to old-fashioned patent remedies. Hey, it makes
+me smile, so whatevs, right?
+
 ## CourtListener
 API information (and key/token) is available at:
 https://www.courtlistener.com/api/rest-info/
