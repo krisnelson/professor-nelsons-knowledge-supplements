@@ -1,6 +1,5 @@
 <?php
-
-
+require_once('dpla-lib.php');
 /**
  * Defines the DPLA widget class (see: https://dp.la)  
  */
@@ -34,6 +33,8 @@ class pnks_DPLA_Widget extends WP_Widget {
 		$max = ( !empty( $instance['max'] ) ) ? sanitize_text_field( $instance['max'] ) : '';
 		$auth = ( !empty( $instance['auth'] ) ) ? sanitize_text_field( $instance['auth'] ) : '';
 
+		$days_to_cache = 2;
+
 		// skip out if no auth key 
 		if( empty($instance['auth']) ) { 
 			echo $args['before_widget'];
@@ -47,10 +48,15 @@ class pnks_DPLA_Widget extends WP_Widget {
 		global $wp_query;
 		global $wpdb;
 		$post_id = $wp_query->post->ID;
-		$search_api_url = 'http://api.dp.la/v2/items?sourceResource.type=text&q=';
-
+		//$search_query = \PNKS\build_search_query( wp_get_post_tags($post_id, array( 'fields' => 'names' )) );
+		//$search_array = array(
+		//	CURLOPT_RETURNTRANSFER => 1,
+		//	CURLOPT_URL => $search_api_url . url_encode($search_query) . '&api_key=' . $auth
+		//);
+		//$search_results = \PNKS\get_search_results( $search_array );
+		//return;
 		// do the search
-		$search_results = _dpla_search($post_id, $search_api_url, $auth);
+		$search_results = \PNKS\DPLA\get_search_results($post_id, $auth);
 		//echo "<pre>" . var_dump($search_results['docs']) . "</pre>"; 
 
 		// skip all display if there are no results
@@ -183,47 +189,5 @@ class pnks_DPLA_Widget extends WP_Widget {
 
 		<?php
 	}
-}
-
-
-
-function _dpla_search( $post_id, $api_url, $auth ) {
-	// check cache
-	$search_results = \PNKS\check_for_cached_results($post_id, "DPLA");
-	if($search_results) { //echo "*** found cached results"; 
-		return $search_results; }
-
-	// if we are throttled, we're done now
-		//set_transient("CourtListenerThrottled", 'Skipping throttle', 1); 
-	if( get_transient("DPLAThrottled") ) { return FALSE; }
-	else { // otherwise, set up a short, voluntary throttle
-		//set_transient("DPLAThrottled", "Waiting in order to be respectful of DPLA resources. [" . $post_id . "]", 30);
-	}
-
-	// prep search from post tags
-	$array_of_terms = wp_get_post_tags($post_id, array( 'fields' => 'names' ));
-	$search_string = \PNKS\build_search($array_of_terms, "OR"); // do an OR search
-	$search_query = urlencode($search_string);
-	$search_results = _dpla_curl($api_url . $search_query, $auth); // returns regular array
-
-	if($search_results['docs']) { 
-		\PNKS\write_cache($post_id, "DPLA", $search_query, $search_results ); 
-		return $search_results; 
-	}
-
-	// otherwise return FALSE
-	return FALSE;
-}
-function _dpla_curl( $search_api_url, $auth ) {
-	$curl = curl_init();
-		curl_setopt_array( $curl, array(
-				CURLOPT_RETURNTRANSFER => 1,
-				CURLOPT_URL => $search_api_url . '&api_key=' . $auth
-			));
-	$curl_response = curl_exec($curl);
-	// close out our curl request
-	curl_close($curl);
-	// return our response after converting from JSON
-	return json_decode($curl_response, true);
 }
 

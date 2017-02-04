@@ -3,6 +3,8 @@ namespace PNKS;
 /**
  *  Functions of use to most or all of our APIs
  */
+
+//////////////
 function check_for_cached_results( $post_id, $base_key, $max_days_to_cache, $min_days_to_cache ) {
 	// if we're being told to refresh...
 	if($_GET['api'] === 'refresh') {
@@ -50,28 +52,44 @@ function build_search( $array_of_terms, $query_type ) {
 	$search_query = '';
 	$count_terms = 0;
 	foreach ($array_of_terms as $term) {
+		if($count_terms) { $search_query .= ' ' . $query_type . ' "' . $term . '"'; $count_terms++; }
+		else { $search_query = $term; $count_terms++; }
+    }
+    return $search_query;
+}
+
+/////////// ideas of other ways to do this...
+function build_search_query ( $array_of_terms, $query_type ) {
+	// $query_type can be "AND" or "OR" (for example)
+	$search_query = '';
+	$count_terms = 0;
+	foreach ($array_of_terms as $term) {
 		if($count_terms) { $search_query .= ' ' . $query_type . ' ' . $term; $count_terms++; }
 		else { $search_query = $term; $count_terms++; }
     }
     return $search_query;
 }
-//function get_number_of_queries($base_key) {
-//	return get_transient($base_key . "Queries") || '1';
-//}
-//function count_query($base_key) { 
-//	$num_queries = get_number_of_queries($base_key);
-//	$num_queries++;
-//	set_transient($base_key . "Queries", $num_queries, 1 * 86400); // reset every 24 hours
-//	set_transient($base_key . "StartTime", time()); // reset every 24 hours
-//}
-//function get_start_of_query_count($base_key) {
-//	$start_time =  get_transient($base_key . "QueriesStartTime");
-//	return $start_time || time();
-//}
-//function queries_per_hour($base_key) {
-//	$num_queries = get_number_of_queries($base_key);
-//	$start_time =  get_start_of_query_count($base_key);
-//	$elapsed_hours = (time() - $start_time) * 60;
-//	$queries_per_hour = $num_queries / $elapsed_hours;
-//	return $queries_per_hour; 
-//}
+function get_search_results( $curl_array ) {
+	$seconds_to_cache = 360; // prevent repeating the same query too many times too quickly
+	// check the cache
+	$results = get_transient( "PNKSgsr" . get_cache_key($curl_array) );
+	// if not cached, do search
+    if ($result === false) {
+        $result = get_results_via_curl($curl_array);
+        set_transient($cache_hash_key, $results, 3600 * 24);
+    }
+    // return result
+    return $result;
+}
+function get_cache_key( $curl_array ) {
+	return sha1( print_r($curl_array, true) ); // get hash of a string dump of the search 
+}
+function get_results_via_curl( $curl_array ) {
+	$curl = curl_init();
+			curl_setopt_array( $curl, $curl_array );
+	$curl_response = curl_exec($curl);
+	// close out our curl request
+	curl_close($curl);
+	// return our response after converting from JSON
+	return json_decode($curl_response, true);
+}
