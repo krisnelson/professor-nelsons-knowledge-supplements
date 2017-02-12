@@ -26,13 +26,8 @@ require_once('lib.php');
 require_once('widget.php');
 require_once('supplements/dpla.php');
 require_once('supplements/courtlistener.php');
+require_once('supplements/crossref.php');
 
-
-
-
-
-//require_once('courtlistener.php');
-//require_once('dpla.php');
 /**
  * Registers the widgets
  */

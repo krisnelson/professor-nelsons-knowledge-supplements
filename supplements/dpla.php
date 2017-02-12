@@ -5,11 +5,16 @@ namespace PNKS\DPLA;
 function do_search ( $query, $auth ) {
 	$search_api_url = 'http://api.dp.la/v2/items' . '?api_key=' . $auth . '&sourceResource.type=text' . '&q=' . $query  ;
 	$cache_key = sha1($search_api_url);
+    // reset cache if asked
+	if($_GET['pnks'] === 'reset') { delete_transient( $cache_key ); }
+	// get cached results, if available
 	$results = get_transient( $cache_key );
-	//error_log("Doing DPLA search for " . $search_api_url);
- 	// are there no cached results and are we not previously throttled?
-	if ( !$results and !get_transient('PNKS-DPLA-Throttled') ) {
-		error_log("PNKS DPLA: Doing actual remote search as nothing cached and not throttled.");
+	// do we have anything cached? 
+    if ( false === $results ) {
+	    if( get_transient('PNKS-Crossref-Throttled') ) { 
+	    	//error_log("** PNKS Crossref currently throttled: " . get_transient('PNKS-CourtListener-Throttled') ); 
+	    	return; } // bail if throttled
+    	// invoke API
 		$curl = curl_init();
 		curl_setopt_array( $curl, array(
 			CURLOPT_RETURNTRANSFER => 1,
@@ -18,42 +23,47 @@ function do_search ( $query, $auth ) {
 		$curl_response = curl_exec($curl);
 		$results = json_decode($curl_response, true); // get response out of JSON format
 		//error_log( print_r($results, true) );
-		set_transient( $cache_key, $results, 6*3600); // 6 hour cache of actual results
 		// close out our curl request
 		curl_close($curl);
 	}
-
+	//else { error_log("+ PNKS DPLA: Got results from transient cache"); }
+	// get plugin settings
+	$settings = (array) get_option( 'pnks-plugin-settings' );
+	// check our results
 	if( $results['docs'] ) { 
+		$days_to_cache = \PNKS\approximate_cache_time_in_days($settings['days_to_cache']);
+		set_transient( $cache_key, $results, $days_to_cache*86400); // cache for roughly the requested time
 		//error_log("PNKS DPLA: Proper results found: " . print_r($results, true) );
-		set_transient("PNKS-DPLA-Throttled", "Voluntarily limiting requests (last actual results cached).", 60); // 1 minute throttle 
+		set_transient("PNKS-DPLA-Throttled", "Voluntarily limiting requests for 1 min as of " . date("m/d/Y h:i:sa"), 1*60); 
 		return normalize_results($results);
 	} 
 	elseif ( $results['message'] ) {
+		// note the error
 		error_log( "PNKS DPLA: Error message: " . print_r($results['message'], true) );
-		set_transient("PNKS-DPLA-Throttled", "Error returned from DPLA: " . $results['message'], 60); // 1 minute throttle 		
-		return FALSE;
 	}
-	else {
-		// no results
-		error_log( "PNKS DPLA: No results from DPLA for (" . $search_api_url . "): " . print_r($results, true) );
-		set_transient("PNKS-DPLA-Throttled", "Voluntarily limiting requests (no results from DPLA for (" . $search_api_url . ") .", 60); // 1 minute throttle 
-		return FALSE;
-	}
+	
+	// no results
+	$days_to_cache = round( \PNKS\approximate_cache_time_in_days($settings['days_to_cache']) / 2 ); // half that time on no results
+	set_transient( $cache_key, $results, $days_to_cache*86400); // cache for roughly the requested time
+	//error_log( "PNKS DPLA: No results from DPLA for (" . $search_api_url . "): " . print_r($results, true) );
+	set_transient("PNKS-DPLA-Throttled", "Voluntarily limiting requests for 1 min as of " . date("m/d/Y h:i:sa"), 1*60); 
+	return FALSE;
 }
 	
 function normalize_results ( $results ) {
 	// take DPLAs materal and normalize it to what PNKS uses
 	// title, author, date, url, summary, source_name, source_url
-
+	$normalized_results = array();
 	// do we actually have any results
 	if ($results['docs']) {
 		// process our results and put into array
 		foreach ($results['docs'] as $item) {
+			$normalized_item = array();
 			// skip over any records with info we don't care about (that lack titles, basically)
-			if( empty($item['sourceResource']['title']) ) { next; } 
+			if( empty($item['sourceResource']['title']) ) { continue; } 
 			elseif( is_array($item['sourceResource']['title']) ) { $title = $item['sourceResource']['title'][0]; }
 			elseif( is_string($item['sourceResource']['title']) ) { $title = $item['sourceResource']['title']; }
-			else { next; } // if it's something else weird, just skip out
+			else { continue; } // if it's something else weird, just skip out
 
 			// extract first part of the description
 			if( is_string($item['sourceResource']['description']) ) { 
@@ -81,7 +91,7 @@ function normalize_results ( $results ) {
 	}
 	else { 
 		// no results to normalize
-		return ''; 
+		return FALSE; 
 	}
 }
 
