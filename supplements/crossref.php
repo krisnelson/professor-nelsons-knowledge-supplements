@@ -32,15 +32,13 @@ function do_search ( $query, $auth ) { 	// e.g., https://api.crossref.org/works?
 	// check our results
 	if( $results['message']['items'] ) { 
 		//error_log("PNKS Crossref: Proper results found: " . print_r($results, true) );
-		$days_to_cache = \PNKS\approximate_cache_time_in_days($settings['days_to_cache']);
-		set_transient( $cache_key, $results, $days_to_cache*86400); // cache for roughly the requested time
+		set_transient( $cache_key, $results, 1*86400); // cache for a day
 		set_transient("PNKS-Crossref-Throttled", "Voluntarily limiting requests for 1 min as of " . date("m/d/Y h:i:sa"), 1*60); 
 		return normalize_results($results);
 	} 
 
 	// no results
-	$days_to_cache = round( \PNKS\approximate_cache_time_in_days($settings['days_to_cache']) / 2 ); // half that time on no results
-	set_transient( $cache_key, $results, $days_to_cache*86400); // cache for roughly the requested time
+	set_transient( $cache_key, $results, 1*86400); // cache for a day
 	set_transient("PNKS-Crossref-Throttled", "Voluntarily limiting requests for 1 min as of " . date("m/d/Y h:i:sa"), 1*60); 
 	return FALSE;
 }

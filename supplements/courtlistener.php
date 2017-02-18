@@ -32,8 +32,7 @@ function do_search ( $query, $auth ) {
 	$settings = (array) get_option( 'pnks-plugin-settings' );
 	// check our results
 	if( $results['results'] ) { 
-		$days_to_cache = \PNKS\approximate_cache_time_in_days($settings['days_to_cache']);
-		set_transient( $cache_key, $results, $days_to_cache*86400 ); // cache for roughly the requested time
+		set_transient( $cache_key, $results, 1*86400 ); // cache for a day
 		set_transient( "PNKS-CourtListener-Throttled", "Voluntarily limiting requests for 5 mins as of " . date("m/d/Y h:i:sa"), 5*60 ); 
 		//error_log("PNKS CL: Proper results found (caching for " . $days_to_cache . " days): " . print_r($results, true) );
 		return normalize_results($results);
@@ -50,8 +49,7 @@ function do_search ( $query, $auth ) {
 		return FALSE;
 	}
 	// no results
-	$days_to_cache = round( \PNKS\approximate_cache_time_in_days($settings['days_to_cache']) / 2 ); // half that time on no results
-	set_transient( $cache_key, $results, $days_to_cache*86400); // cache for roughly the requested time
+	set_transient( $cache_key, $results, 1*86400); // cache for a day
 	set_transient( "PNKS-CourtListener-Throttled", "Voluntarily limiting requests for 5 mins as of " . date("m/d/Y h:i:sa"), 5*60 ); 
 	//error_log( "PNKS CL: Apparently no results from Court Listener (cached for " . $days_to_cache . " days) for search (" . $search_api_url . "): " . print_r($results, true) );
 	return FALSE;
