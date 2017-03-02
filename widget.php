@@ -67,7 +67,7 @@ class pnks_Multi_Widget extends WP_Widget {
 		// now go check cache/external APIs
 		if($show_courtlistener === 'true') { 
 			$PNKSCache = new \PNKS\CacheFragments( 'CourtListener', $cache_args );
-			if ( $_GET['pnks'] === 'reset' ) { $PNKSCache->erase(); }
+			if ( isset($_GET['pnks']) and $_GET['pnks'] === 'reset' ) { $PNKSCache->erase(); }
 			$courtlistener = $PNKSCache->read();
 			if ( false === $courtlistener ) {
 				$query = urlencode( \PNKS\build_search($array_of_terms, 'OR') ); 
@@ -78,7 +78,7 @@ class pnks_Multi_Widget extends WP_Widget {
 		}
 		if($show_dpla === 'true') { 
 			$PNKSCache = new \PNKS\CacheFragments( 'DPLA', $cache_args );
-			if ( $_GET['pnks'] === 'reset' ) { $PNKSCache->erase(); }
+			if ( isset($_GET['pnks']) and $_GET['pnks'] === 'reset' ) { $PNKSCache->erase(); }
 			$dpla = $PNKSCache->read();
 			if ( false === $dpla ) {
 				$query = urlencode( \PNKS\build_search($array_of_terms, 'OR') ); 
@@ -89,7 +89,7 @@ class pnks_Multi_Widget extends WP_Widget {
 		}
 		if($show_crossref === 'true') { 
 			$PNKSCache = new \PNKS\CacheFragments( 'Crossref', $cache_args );
-			if ( $_GET['pnks'] === 'reset' ) { $PNKSCache->erase(); }
+			if ( isset($_GET['pnks']) and $_GET['pnks'] === 'reset' ) { $PNKSCache->erase(); }
 			$crossref = $PNKSCache->read();
 			if ( false === $crossref ) {
 				$query = urlencode( \PNKS\build_search($array_of_terms, '') ); 

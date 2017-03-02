@@ -29,9 +29,9 @@ function build_search( $array_of_terms, $query_type ) {
 function array_merge_alternate($a, $b, $c) {
 	$total_elements = count($a) + count($b) + count($c);
 	for ($i = 0; $i < $total_elements; $i++) {
-	    if($a[$i]) { $newArray[] = $a[$i]; }
-	    if($b[$i]) { $newArray[] = $b[$i]; }
-	    if($c[$i]) { $newArray[] = $c[$i]; }
+	    if(isset($a[$i])) { $newArray[] = $a[$i]; }
+	    if(isset($b[$i])) { $newArray[] = $b[$i]; }
+	    if(isset($c[$i])) { $newArray[] = $c[$i]; }
 	}
 	return $newArray;
 }
