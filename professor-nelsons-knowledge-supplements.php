@@ -177,7 +177,7 @@ function dpla_auth_callback() {
 /*
 * INPUT VALIDATION:
 * */
-function my_settings_validate_and_sanitize( $input ) {
+function pnks_settings_validate_and_sanitize( $input ) {
 	$settings = (array) get_option( 'pnks-plugin-settings' );
 	
 //	if ( $some_condition == $input['field_1_1'] ) {
